@@ -164,8 +164,8 @@ def get_extension_id(path):
 def add_extension():
     
     extension_path = "/your/path/here"
-    #random_ext_str = "bafgiajifbmjkngngljdgmpcbehgbbkm"
-    random_ext_str = get_extension_id(extension_path) #cookiebro, you will need to replace with your extension
+    #random_ext_str = "bafgiajifbmjkngngljdgmpcbehgbbkm" -> this is an example of how you could hard-code this if you need to.
+    random_ext_str = get_extension_id(extension_path) 
     #print(random_ext_str)
     sid = ""
     try:
