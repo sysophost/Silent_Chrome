@@ -42,6 +42,7 @@ import subprocess
 import re
 import datetime
 import os
+import sys
 
 #https://github.com/Pica4x6/SecurePreferencesFile 
 def removeEmpty(d):
@@ -130,10 +131,42 @@ def encode_to_install_time(date):
     install_time = int(difference_in_seconds * 1000000) + 11644473600000000
     return install_time
 
+def calculate_chrome_dev_mac(seed: bytes, sid: str, pref_path: str, pref_value) -> str:
+    """
+    Calculates the HMAC-SHA256 for a Chrome protected preference.
+
+    Parameters:
+        seed (bytes): The secret key from PlatformKeys.
+        sid (str): The Windows user SID.
+        pref_path (str): The full preference path (e.g., "extensions.ui.developer_mode").
+        pref_value: The preference value (e.g., True, False, a string, etc.).
+
+    Returns:
+        str: The hexadecimal HMAC digest.
+    """
+    # Serialize the value to canonical JSON (compact, sorted if needed)
+    serialized_value = json.dumps(pref_value, separators=(',', ':'), sort_keys=True)
+    
+    # Build the input string
+    hmac_input = (sid + pref_path + serialized_value).encode('utf-8')
+    
+    # Calculate the HMAC-SHA256
+    return hmac.new(seed, hmac_input, hashlib.sha256).hexdigest()
+
+def get_extension_id(path):
+    m=hashlib.sha256()
+    #m.update(bytes(path.encode('utf-16-le')))
+    m.update(bytes(path.encode('utf-8')))
+    EXTID = ''.join([chr(int(i, base=16) + ord('a')) for i in m.hexdigest()][:32])
+    print("Using ExtID: {}".format(EXTID))
+    return EXTID
+
 def add_extension():
     
-    random_ext_str = "lpmockibcakojclnfmhchibmdpmollgn" #cookiebro, you will need to replace with your extension
-    
+    extension_path = "/your/path/here"
+    #random_ext_str = "bafgiajifbmjkngngljdgmpcbehgbbkm"
+    random_ext_str = get_extension_id(extension_path) #cookiebro, you will need to replace with your extension
+    #print(random_ext_str)
     sid = ""
     try:
         sid = subprocess.check_output(['system_profiler', 'SPHardwareDataType', '|', 'awk', '\'/UUID/ { print $3; }\''], universal_newlines=True)
@@ -155,7 +188,7 @@ def add_extension():
     #extension_json = r'{"active_permissions":{"api":["contextMenus","history","storage","tabs","unlimitedStorage"],"explicit_host":[],"manifest_permissions":[],"scriptable_host":[]},"commands":{"_execute_action":{"was_assigned":true},"close":{"suggested_key":""},"manager":{"suggested_key":"Alt+A","was_assigned":true},"new":{"suggested_key":"Alt+N","was_assigned":true},"search":{"suggested_key":""},"switch":{"suggested_key":"Alt+S","was_assigned":true}},"content_settings":[],"creation_flags":9,"cws-info":{"is-live":true,"is-present":true,"last-updated-time-millis":"1721372400000","no-privacy-practice":false,"unpublished-long-ago":false,"violation-type":0},"filtered_service_worker_events":{"windows.onCreated":[{}],"windows.onFocusChanged":[{}],"windows.onRemoved":[{}]},"first_install_time":"%s","from_webstore":true,"granted_permissions":{"api":["contextMenus","history","storage","tabs","unlimitedStorage"],"explicit_host":[],"manifest_permissions":[],"scriptable_host":[]},"incognito_content_settings":[],"incognito_preferences":{},"last_update_time":"%s","location":1,"manifest":{"action":{"default_icon":{"32":"images/bookmark_btn.png"},"default_title":"Workona Spaces"},"background":{"service_worker":"background.js"},"commands":{"_execute_action":{"description":"Save current tab to space","suggested_key":{"default":"Alt+D","windows":"Alt+T"}},"close":{"description":"Close space"},"manager":{"description":"Switch space","suggested_key":{"default":"Alt+A"}},"new":{"description":"New space or doc","suggested_key":{"default":"Alt+N"}},"search":{"description":"Open Workona"},"switch":{"description":"Universal search","suggested_key":{"default":"Alt+S"}}},"description":"The world’s best tab manager","externally_connectable":{"matches":["https://workona.com/*","https://*.workona.com/*"]},"homepage_url":"https://workona.com/0/","icons":{"128":"images/icon_128.png","16":"images/icon_16.png","256":"images/icon_256.png","32":"images/icon_32.png","48":"images/icon_96.png","96":"images/icon_96.png"},"key":"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlTDCGRkVU6zgrNCQQMXwgoVB0A+rGZh9E1yokH4T+cqz6zxMG/f/gZiWHvYDb9thNTtGKyl7LiE0Op3VTqeRlSV8pN5+5ojkSawiNHEXS+8ImzAoSsWTFkiloZnk6HIP2eCKvx2be+mE74Yq/6kPnTxApUitZ6gXVM1udnw59mFhXw8R9DUtMDTfQwA1Us8UnfBIEyqIfcqVqdymYjZfD9e16n7kVzq4p0yHnXgyrIUhRsI2APfsgVD673R7sDtbJDeU5lvuZBvBjczKw16YL2RqdlzmVZXaIZClsWWMEoyH9Q2mLZf9tM5aaSoiguMQ3VVlDRMzlzm5xtjFmLfINwIDAQAB","manifest_version":3,"minimum_chrome_version":"102","name":"Tab Manager by Workona","optional_host_permissions":["https://workona.com/*","https://*.workona.com/*"],"optional_permissions":["system.memory","tabGroups"],"permissions":["contextMenus","history","tabs","storage","unlimitedStorage"],"short_name":"Workona","update_url":"https://clients2.google.com/service/update2/crx","version":"3.1.32"},"needs_sync":true,"path":"ailcmbgekjpnablpdkmaaccecekgdhlh/3.1.32_0","preferences":{},"regular_only_preferences":{},"service_worker_registration_info":{"version":"3.1.32"},"serviceworkerevents":["commands.onCommand","contextMenus.onClicked","runtime.onConnectExternal","runtime.onInstalled","runtime.onStartup","runtime.onSuspend","runtime.onSuspendCanceled","runtime.onUpdateAvailable","tabs.onActivated","tabs.onAttached","tabs.onCreated","tabs.onDetached","tabs.onMoved","tabs.onRemoved","tabs.onReplaced","tabs.onUpdated"],"state":1,"uninstall_url":"https://workona.com/extension-feedback/","was_installed_by_default":false,"was_installed_by_oem":false,"withholding_permissions":false}' % (encoded_install_time, encoded_install_time)
 
     print(encoded_install_time)
-    extension_json=r'{"active_bit": false, "active_permissions": {"api": ["browsingData", "cookies", "storage", "tabs", "unlimitedStorage", "webRequest", "webRequestBlocking"], "explicit_host": ["http://*/*", "https://*/*"], "manifest_permissions": [], "scriptable_host": []}, "allowlist": 1, "commands": {}, "content_settings": [], "creation_flags": 9, "cws-info": {"is-live": true, "is-present": true, "last-updated-time-millis": "1611561600000", "no-privacy-practice": false, "unpublished-long-ago": false, "violation-type": 0}, "events": [], "first_install_time": "%s", "from_webstore": true, "granted_permissions": {"api": ["browsingData", "cookies", "storage", "tabs", "unlimitedStorage", "webRequest", "webRequestBlocking"], "explicit_host": ["http://*/*", "https://*/*"], "manifest_permissions": [], "scriptable_host": []}, "incognito_content_settings": [], "incognito_preferences": {}, "last_update_time": "%s", "location": 1, "manifest": {"background": {"page": "background.html", "persistent": true}, "browser_action": {"default_icon": "images/cookiebro48.png", "default_popup": "mainmenu.html", "default_title": "Cookiebro"}, "current_locale": "en_US", "default_locale": "en", "description": "Advanced browser cookie manager.", "differential_fingerprint": "1.bb23f3bf2d8258b613b6b89709643008ad0f041be4e2f5f502b2ea03970bcc90", "homepage_url": "https://nodetics.com/cookiebro", "icons": {"128": "images/cookiebro128.png", "16": "images/cookiebro16.png", "48": "images/cookiebro48.png"}, "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiaN0BLEI2FpvnebLy1ourdOSe2DPU1GbnP7GNnG1VyWyVZU7F5/8NFRoUfuXVClCH6EsYXBeTuT9d3SFGI33hAbtTUJLs3j2M1X75ddvDBv6gSSpBnAI6BepuQeCiYIFzhPZl/Nn0jMd2KNVae8Dbhcru+RT9B+s00vtD4+dd6ojUQhfANyjlz53oYWBuUqkLrKq8duf7wAtKO0fgTcQjNYFT/ASnnGnRsvE/R3Ap4rEzWjS+HfLS//USKGzDOcPbuQNGTXTkk3DUU9AQqZp3wU1xwXDbgOMEjR6HGytBETZc9OscHkb8T9cNPFJd64sT+zGajRsy8SNC45wC1hkuQIDAQAB", "manifest_version": 2, "name": "Cookiebro", "options_page": "options.html", "permissions": ["tabs", "http://*/", "https://*/", "cookies", "webRequest", "webRequestBlocking", "storage", "unlimitedStorage", "browsingData"], "update_url": "https://clients2.google.com/service/update2/crx", "version": "2.18.1"}, "needs_sync": true, "path": "lpmockibcakojclnfmhchibmdpmollgn/2.18.1_1", "preferences": {}, "regular_only_preferences": {}, "state": 1, "was_installed_by_default": false, "was_installed_by_oem": false, "withholding_permissions": false}' % (encoded_install_time, encoded_install_time)
+    extension_json=r'{"account_extension_type":0,"active_permissions":{"api":["cookies","downloads","storage","tabs"],"explicit_host":["\u003Call_urls>"],"manifest_permissions":[],"scriptable_host":[]},"commands":{},"content_settings":[],"creation_flags":38,"disable_reasons":[],"first_install_time":"%s","from_webstore":false,"granted_permissions":{"api":["cookies","downloads","storage","tabs"],"explicit_host":["\u003Call_urls>"],"manifest_permissions":[],"scriptable_host":[]},"incognito_content_settings":[],"incognito_preferences":{},"last_update_time":"%s","location":4,"newAllowFileAccess":true,"path":"%s","preferences":{},"regular_only_preferences":{},"service_worker_registration_info":{"version":"1.0"},"serviceworkerevents":["tabs.onUpdated"],"was_installed_by_default":false,"was_installed_by_oem":false,"withholding_permissions":false}' % (encoded_install_time, encoded_install_time, extension_path)
     
 
     dict_extension=json.loads(extension_json, object_pairs_hook=OrderedDict)
@@ -178,6 +211,35 @@ def add_extension():
     print(macs)
     #add macs to json file
     data["protection"]["macs"]["extensions"]["settings"][random_ext_str]=macs
+
+    #set dev mode to true
+    try:
+        data["extensions"]["ui"]["developer_mode"]=True
+    except KeyError: # means extensions: UI is not found
+       
+        # developer_mode = OrderedDict()
+        # ui = OrderedDict()
+        
+
+        data["extensions"].setdefault("ui", OrderedDict())
+        # now insert your empty OrderedDict into developer_mode
+        data["extensions"]["ui"]["developer_mode"] = OrderedDict()
+        data["extensions"]["ui"]["developer_mode"]= True
+
+        # print("Need to toggle developer mode")
+        # sys.exit()
+
+    pref_path = "extensions.ui.developer_mode"
+    pref_value = True
+    mac = calculate_chrome_dev_mac(seed, sid, pref_path, pref_value)
+    print(mac)
+    try:
+        data["protection"]["macs"]["extensions"]["ui"]["developer_mode"]=mac
+    except KeyError:
+        print("Need to toggle developer mode")
+        sys.exit()
+    devmode_value=r'{"developer_mode": true}'
+    parseddevmode=json.loads(devmode_value, object_pairs_hook=OrderedDict)
     
     newdata=json.dumps(data)
     
