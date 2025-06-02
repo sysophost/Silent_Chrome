@@ -269,7 +269,7 @@ def add_extension(profile_path, extension_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Add a Chrome extension by modifying Secure Preferences.")
     parser.add_argument("--profile_path", "-p", default=os.path.expanduser("~/Library/Application Support/Google/Chrome/Default"),
-                        help="Path to the Chrome extension to install")
+                        help="Path to the Chrome profile")
     parser.add_argument("--extension_path", "-e", required=True, help="Path to the Chrome extension to install")
 
     args = parser.parse_args()
